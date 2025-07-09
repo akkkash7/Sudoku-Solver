@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Solver</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .sudoku-container {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(9, 50px);
+            gap: 1px;
+            background-color: #333;
+            border: 3px solid #000;
+        }
+        
+        .cell {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            border: 1px solid #999;
+            background-color: white;
+            box-sizing: border-box;
+        }
+        
+        /* Add thicker borders for 3x3 boxes */
+        .cell:nth-child(3n) {
+            border-right: 2px solid #000;
+        }
+        
+        .cell:nth-child(9n) {
+            border-right: none;
+        }
+        
+        /* Add thicker borders for horizontal lines between 3x3 boxes */
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 2px solid #000;
+        }
+        
+        /* Remove extra border at the bottom of the grid */
+        .cell:nth-child(n+73):nth-child(-n+81) {
+            border-bottom: 1px solid #999;
+        }
+        
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .clear-btn {
+            background-color: #f44336;
+        }
+        
+        .clear-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sudoku Solver</h1>
+    <div class="sudoku-container" id="sudoku-grid"></div>
+    <div class="buttons">
+        <button id="solve-btn">Solve</button>
+        <button id="clear-btn" class="clear-btn">Clear</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sudokuGrid = document.getElementById('sudoku-grid');
+            const solveBtn = document.getElementById('solve-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            
+            // Create the Sudoku grid
+            for (let i = 0; i < 81; i++) {
+                const cell = document.createElement('input');
+                cell.type = 'text';
+                cell.className = 'cell';
+                cell.maxLength = 1;
+                cell.addEventListener('input', function(e) {
+                    const value = e.target.value;
+                    if (value && !/^[1-9]$/.test(value)) {
+                        e.target.value = '';
+                    }
+                });
+                sudokuGrid.appendChild(cell);
+            }
+            
+            // Solve button click handler
+            solveBtn.addEventListener('click', function() {
+                const board = getBoardFromInput();
+                if (solveSudoku(board)) {
+                    updateGrid(board);
+                } else {
+                    alert('No solution exists for this Sudoku puzzle!');
+                }
+            });
+            
+            // Clear button click handler
+            clearBtn.addEventListener('click', function() {
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach(cell => {
+                    cell.value = '';
+                });
+            });
+            
+            // Get the current board state from the input fields
+            function getBoardFromInput() {
+                const cells = document.querySelectorAll('.cell');
+                const board = Array(9).fill().map(() => Array(9).fill('.'));
+                
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        const index = i * 9 + j;
+                        const value = cells[index].value;
+                        if (value) {
+                            board[i][j] = value;
+                        }
+                    }
+                }
+                
+                return board;
+            }
+            
+            // Update the grid with the solved board
+            function updateGrid(board) {
+                const cells = document.querySelectorAll('.cell');
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        const index = i * 9 + j;
+                        cells[index].value = board[i][j];
+                    }
+                }
+            }
+            
+            // Sudoku solver functions (converted from C++ to JavaScript)
+            function solveSudoku(board) {
+                return solve(board);
+            }
+            
+            function solve(board) {
+                for (let i = 0; i < 9; i++) {
+                    for (let j = 0; j < 9; j++) {
+                        if (board[i][j] === '.') {
+                            for (let c = '1'; c <= '9'; c = String.fromCharCode(c.charCodeAt(0) + 1)) {
+                                if (isValid(board, i, j, c)) {
+                                    board[i][j] = c;
+                                    if (solve(board)) {
+                                        return true;
+                                    } else {
+                                        board[i][j] = '.';
+                                    }
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            
+            function isValid(board, row, col, c) {
+                for (let i = 0; i < 9; i++) {
+                    if (board[i][col] === c) return false;
+                    if (board[row][i] === c) return false;
+                    const boxRow = 3 * Math.floor(row / 3) + Math.floor(i / 3);
+                    const boxCol = 3 * Math.floor(col / 3) + (i % 3);
+                    if (board[boxRow][boxCol] === c) return false;
+                }
+                return true;
+            }
+        });
+    </script>
+</body>
+</html>
